@@ -1,0 +1,27 @@
+/* SIDEBAR IZQUIERDO */
+.sidebar,
+.main-sidebar {
+    background-color: #020617 !important;  /* negro profundo */
+    border-right: 1px solid #1F2937 !important;
+}
+
+/* TEXTO DEL SIDEBAR */
+.sidebar a {
+    color: #9CA3AF !important;
+    font-weight: 500;
+}
+
+/* HOVER */
+.sidebar a:hover {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+    border-radius: 6px;
+}
+
+/* ITEM ACTIVO */
+.sidebar .active,
+.sidebar a.active {
+    background-color: #2563EB !important;
+    color: #FFFFFF !important;
+    border-radius: 6px;
+}
