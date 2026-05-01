@@ -1,4 +1,4 @@
-
+import re
 from django.db import models
 from django.core.exceptions import ValidationError
 
@@ -17,7 +17,7 @@ class Usuario(models.Model):
     apellidos = models.CharField(max_length=100, verbose_name="Apellidos")
     email = models.EmailField(unique=True, verbose_name="Correo electrónico")
     password = models.CharField(max_length=255, verbose_name="Contraseña")
-    dni = models.CharField(max_length=8, verbose_name="DNI")
+    dni = models.CharField(max_length=8, unique=True, verbose_name="DNI")
     tipo_usuario = models.CharField(
         max_length=10,
         choices=TipoUsuario.choices,
@@ -36,7 +36,10 @@ class Usuario(models.Model):
         null=True,
         verbose_name="Foto de perfil"
     )
-    fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de registro")
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de registro"
+    )
 
     class Meta:
         db_table = 'usuario'
@@ -48,16 +51,41 @@ class Usuario(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
     def clean(self):
-        if self.dni and len(self.dni) != 8:
-            raise ValidationError("El DNI debe tener exactamente 8 dígitos.")
+        errores = {}
 
+        if not self.nombres or not self.nombres.strip():
+            errores['nombres'] = "El nombre no puede estar vacío."
+
+        if not self.apellidos or not self.apellidos.strip():
+            errores['apellidos'] = "El apellido no puede estar vacío."
+
+        if not re.fullmatch(r'\d{8}', self.dni or ''):
+            errores['dni'] = "El DNI debe tener exactamente 8 dígitos numéricos."
+
+        if not self.password or len(self.password) < 6:
+            errores['password'] = "La contraseña debe tener mínimo 6 caracteres."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+import re
+from django.core.exceptions import ValidationError
 
 class Comunero(models.Model):
     class EstadoComunero(models.TextChoices):
         ACTIVO = 'ACTIVO', 'ACTIVO'
         INACTIVO = 'INACTIVO', 'INACTIVO'
 
-    dni = models.CharField(max_length=8, unique=True, verbose_name="DNI oficial")
+    dni = models.CharField(
+        max_length=8,
+        unique=True,
+        verbose_name="DNI oficial"
+    )
     nombres = models.CharField(max_length=100, verbose_name="Nombres")
     apellidos = models.CharField(max_length=100, verbose_name="Apellidos")
     estado = models.CharField(
@@ -83,13 +111,40 @@ class Comunero(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
     def clean(self):
-        if self.dni and len(self.dni) != 8:
-            raise ValidationError("El DNI del comunero debe tener exactamente 8 dígitos.")
+        errores = {}
+
+        # DNI válido
+        if not re.fullmatch(r'\d{8}', self.dni or ''):
+            errores['dni'] = "El DNI debe tener exactamente 8 dígitos."
+
+        # Nombres y apellidos no vacíos
+        if not self.nombres.strip():
+            errores['nombres'] = "El nombre no puede estar vacío."
+
+        if not self.apellidos.strip():
+            errores['apellidos'] = "El apellido no puede estar vacío."
+
+        # Validar tipo de usuario
+        if self.usuario and self.usuario.tipo_usuario != Usuario.TipoUsuario.COMUNERO:
+            errores['usuario'] = "El usuario debe ser de tipo COMUNERO."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Categoria(models.Model):
-    nombre = models.CharField(max_length=100, verbose_name="Nombre")
-    descripcion = models.TextField(verbose_name="Descripción")
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Nombre"
+    )
+    descripcion = models.TextField(
+        verbose_name="Descripción"
+    )
 
     class Meta:
         db_table = 'categoria'
@@ -100,6 +155,21 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
+    def clean(self):
+        errores = {}
+
+        if not self.nombre or not self.nombre.strip():
+            errores['nombre'] = "El nombre de la categoría no puede estar vacío."
+
+        if not self.descripcion or not self.descripcion.strip():
+            errores['descripcion'] = "La descripción no puede estar vacía."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 class Noticia(models.Model):
     class EstadoNoticia(models.TextChoices):
@@ -120,7 +190,10 @@ class Noticia(models.Model):
         related_name='noticias',
         verbose_name="Usuario responsable"
     )
-    fecha_publicacion = models.DateTimeField(verbose_name="Fecha de publicación")
+    fecha_publicacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de publicación"
+    )
     estado = models.CharField(
         max_length=10,
         choices=EstadoNoticia.choices,
@@ -138,9 +211,27 @@ class Noticia(models.Model):
         return self.titulo
 
     def clean(self):
-        if self.usuario and self.usuario.tipo_usuario != Usuario.TipoUsuario.ADMIN:
-            raise ValidationError("Solo un usuario ADMIN puede publicar noticias.")
+        errores = {}
 
+        if not self.titulo or not self.titulo.strip():
+            errores['titulo'] = "El título no puede estar vacío."
+
+        if not self.contenido or not self.contenido.strip():
+            errores['contenido'] = "El contenido no puede estar vacío."
+
+        if self.usuario and self.usuario.tipo_usuario != Usuario.TipoUsuario.ADMIN:
+            errores['usuario'] = "Solo un usuario ADMIN puede publicar noticias."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+
+from django.utils import timezone
 
 class Evento(models.Model):
     class EstadoEvento(models.TextChoices):
@@ -162,7 +253,10 @@ class Evento(models.Model):
         verbose_name="Usuario responsable"
     )
     fecha_evento = models.DateTimeField(verbose_name="Fecha del evento")
-    fecha_publicacion = models.DateTimeField(verbose_name="Fecha de publicación")
+    fecha_publicacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de publicación"
+    )
     estado = models.CharField(
         max_length=10,
         choices=EstadoEvento.choices,
@@ -180,8 +274,28 @@ class Evento(models.Model):
         return self.titulo
 
     def clean(self):
+        errores = {}
+
+        if not self.titulo or not self.titulo.strip():
+            errores['titulo'] = "El título no puede estar vacío."
+
+        if not self.descripcion or not self.descripcion.strip():
+            errores['descripcion'] = "La descripción no puede estar vacía."
+
+        # Solo ADMIN puede publicar
         if self.usuario and self.usuario.tipo_usuario != Usuario.TipoUsuario.ADMIN:
-            raise ValidationError("Solo un usuario ADMIN puede publicar eventos.")
+            errores['usuario'] = "Solo un usuario ADMIN puede publicar eventos."
+
+        # Validar fecha no pasada
+        if self.fecha_evento and self.fecha_evento < timezone.now():
+            errores['fecha_evento'] = "No se puede crear un evento con fecha pasada."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Comentario(models.Model):
@@ -224,35 +338,47 @@ class Comentario(models.Model):
     estado = models.CharField(
         max_length=10,
         choices=EstadoComentario.choices,
-        default=EstadoComentario.PENDIENTE,
-        verbose_name="Estado"
+        default=EstadoComentario.PENDIENTE
     )
-    tiene_palabras_prohibidas = models.BooleanField(
-        default=False,
-        verbose_name="Tiene palabras prohibidas"
-    )
-    editado = models.BooleanField(default=False, verbose_name="Editado")
-    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
+    tiene_palabras_prohibidas = models.BooleanField(default=False)
+    editado = models.BooleanField(default=False)
+    fecha = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'comentario'
-        verbose_name = "Comentario"
-        verbose_name_plural = "Comentarios"
         ordering = ['-fecha']
 
     def __str__(self):
         return f"Comentario #{self.id} - {self.usuario}"
 
     def clean(self):
+        errores = {}
+
+        # Contenido obligatorio
+        if not self.contenido or not self.contenido.strip():
+            errores['contenido'] = "El comentario no puede estar vacío."
+
+        # Solo puede pertenecer a uno
         if self.noticia and self.evento:
-            raise ValidationError("Un comentario no puede estar asociado a noticia y evento al mismo tiempo.")
+            errores['noticia'] = "No puede estar en noticia y evento al mismo tiempo."
+
         if not self.noticia and not self.evento:
-            raise ValidationError("Un comentario debe estar asociado a una noticia o a un evento.")
+            errores['noticia'] = "Debe pertenecer a una noticia o a un evento."
+
+        # Validar comentario padre
         if self.comentario_padre:
             if self.noticia and self.comentario_padre.noticia != self.noticia:
-                raise ValidationError("El comentario padre debe pertenecer a la misma noticia.")
+                errores['comentario_padre'] = "Debe responder a la misma noticia."
+
             if self.evento and self.comentario_padre.evento != self.evento:
-                raise ValidationError("El comentario padre debe pertenecer al mismo evento.")
+                errores['comentario_padre'] = "Debe responder al mismo evento."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Reaccion(models.Model):
@@ -299,10 +425,20 @@ class Reaccion(models.Model):
         return f"{self.usuario} - {self.tipo} - {destino}"
 
     def clean(self):
+        errores = {}
+
         if self.noticia and self.evento:
-            raise ValidationError("Una reacción no puede estar asociada a noticia y evento al mismo tiempo.")
+            errores['noticia'] = "Una reacción no puede estar asociada a noticia y evento al mismo tiempo."
+
         if not self.noticia and not self.evento:
-            raise ValidationError("Una reacción debe estar asociada a una noticia o a un evento.")
+            errores['noticia'] = "Una reacción debe estar asociada a una noticia o a un evento."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Mensaje(models.Model):
@@ -319,7 +455,10 @@ class Mensaje(models.Model):
         verbose_name="Receptor"
     )
     contenido = models.TextField(verbose_name="Contenido")
-    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
+    fecha = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha"
+    )
 
     class Meta:
         db_table = 'mensaje'
@@ -330,6 +469,21 @@ class Mensaje(models.Model):
     def __str__(self):
         return f"Mensaje de {self.emisor} a {self.receptor}"
 
+    def clean(self):
+        errores = {}
+
+        if not self.contenido or not self.contenido.strip():
+            errores['contenido'] = "El mensaje no puede estar vacío."
+
+        if self.emisor and self.receptor and self.emisor == self.receptor:
+            errores['receptor'] = "El usuario no puede enviarse un mensaje a sí mismo."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 class Notificacion(models.Model):
     class TipoNotificacion(models.TextChoices):
@@ -337,8 +491,13 @@ class Notificacion(models.Model):
         COMUNEROS = 'COMUNEROS', 'COMUNEROS'
         PERSONAL = 'PERSONAL', 'PERSONAL'
 
-    titulo = models.CharField(max_length=200, verbose_name="Título")
-    mensaje = models.TextField(verbose_name="Mensaje")
+    titulo = models.CharField(
+        max_length=200,
+        verbose_name="Título"
+    )
+    mensaje = models.TextField(
+        verbose_name="Mensaje"
+    )
     tipo = models.CharField(
         max_length=15,
         choices=TipoNotificacion.choices,
@@ -352,7 +511,10 @@ class Notificacion(models.Model):
         blank=True,
         verbose_name="Usuario destino"
     )
-    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
+    fecha = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha"
+    )
 
     class Meta:
         db_table = 'notificacion'
@@ -364,10 +526,29 @@ class Notificacion(models.Model):
         return self.titulo
 
     def clean(self):
+        errores = {}
+
+        if not self.titulo or not self.titulo.strip():
+            errores['titulo'] = "El título no puede estar vacío."
+
+        if not self.mensaje or not self.mensaje.strip():
+            errores['mensaje'] = "El mensaje no puede estar vacío."
+
         if self.tipo == self.TipoNotificacion.PERSONAL and not self.usuario_destino:
-            raise ValidationError("La notificación PERSONAL debe tener un usuario destino.")
-        if self.tipo in [self.TipoNotificacion.GLOBAL, self.TipoNotificacion.COMUNEROS] and self.usuario_destino:
-            raise ValidationError("Solo la notificación PERSONAL debe tener usuario destino.")
+            errores['usuario_destino'] = "La notificación PERSONAL debe tener un usuario destino."
+
+        if self.tipo in [
+            self.TipoNotificacion.GLOBAL,
+            self.TipoNotificacion.COMUNEROS
+        ] and self.usuario_destino:
+            errores['usuario_destino'] = "Solo la notificación PERSONAL debe tener usuario destino."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Multimedia(models.Model):
@@ -375,7 +556,10 @@ class Multimedia(models.Model):
         IMAGEN = 'IMAGEN', 'IMAGEN'
         VIDEO = 'VIDEO', 'VIDEO'
 
-    url = models.CharField(max_length=255, verbose_name="URL o ruta")
+    url = models.CharField(
+        max_length=255,
+        verbose_name="URL o ruta"
+    )
     tipo = models.CharField(
         max_length=10,
         choices=TipoMultimedia.choices,
@@ -398,7 +582,10 @@ class Multimedia(models.Model):
         verbose_name="Evento"
     )
     orden = models.IntegerField(verbose_name="Orden")
-    fecha_subida = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de subida")
+    fecha_subida = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de subida"
+    )
 
     class Meta:
         db_table = 'multimedia'
@@ -410,10 +597,27 @@ class Multimedia(models.Model):
         return self.url
 
     def clean(self):
+        errores = {}
+
+        if not self.url or not self.url.strip():
+            errores['url'] = "Debe ingresar una URL o ruta del archivo."
+
         if self.noticia and self.evento:
-            raise ValidationError("El archivo multimedia no puede estar asociado a noticia y evento al mismo tiempo.")
+            errores['noticia'] = "El archivo multimedia no puede estar asociado a noticia y evento al mismo tiempo."
+
         if not self.noticia and not self.evento:
-            raise ValidationError("El archivo multimedia debe estar asociado a una noticia o a un evento.")
+            errores['noticia'] = "El archivo multimedia debe estar asociado a una noticia o a un evento."
+
+        if self.orden is not None and self.orden < 1:
+            errores['orden'] = "El orden debe ser mayor o igual a 1."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 
 class Reporte(models.Model):
@@ -446,7 +650,10 @@ class Reporte(models.Model):
         blank=True,
         verbose_name="Comentario"
     )
-    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
+    fecha = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha"
+    )
     estado = models.CharField(
         max_length=10,
         choices=EstadoReporte.choices,
@@ -464,5 +671,24 @@ class Reporte(models.Model):
         return f"{self.tipo} - {self.usuario}"
 
     def clean(self):
+        errores = {}
+
+        if not self.descripcion or not self.descripcion.strip():
+            errores['descripcion'] = "La descripción no puede estar vacía."
+
         if self.tipo == self.TipoReporte.REPORTE_COMENTARIO and not self.comentario:
-            raise ValidationError("Si el tipo es REPORTE_COMENTARIO, debes seleccionar un comentario.")
+            errores['comentario'] = "Si el tipo es REPORTE_COMENTARIO, debes seleccionar un comentario."
+
+        if self.tipo in [
+            self.TipoReporte.QUEJA,
+            self.TipoReporte.SUGERENCIA
+        ] and self.comentario:
+            errores['comentario'] = "Solo los reportes de comentario deben tener un comentario asociado."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
