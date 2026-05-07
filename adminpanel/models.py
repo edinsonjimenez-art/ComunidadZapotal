@@ -551,37 +551,53 @@ class Notificacion(models.Model):
         super().save(*args, **kwargs)
 
 
+from django.db import models
+from django.core.exceptions import ValidationError
+
+
 class Multimedia(models.Model):
+
     class TipoMultimedia(models.TextChoices):
         IMAGEN = 'IMAGEN', 'IMAGEN'
         VIDEO = 'VIDEO', 'VIDEO'
 
-    url = models.CharField(
-        max_length=255,
-        verbose_name="URL o ruta"
+    archivo = models.FileField(
+        upload_to='multimedia/',
+        null=True,        # 👈 IMPORTANTE
+        blank=True,  
+        verbose_name="Archivo (imagen o video)"
     )
+
+
     tipo = models.CharField(
         max_length=10,
         choices=TipoMultimedia.choices,
         verbose_name="Tipo"
     )
+
     noticia = models.ForeignKey(
-        Noticia,
+        'Noticia',
         on_delete=models.CASCADE,
         related_name='multimedia',
         null=True,
         blank=True,
         verbose_name="Noticia"
     )
+
     evento = models.ForeignKey(
-        Evento,
+        'Evento',
         on_delete=models.CASCADE,
         related_name='multimedia',
         null=True,
         blank=True,
         verbose_name="Evento"
     )
-    orden = models.IntegerField(verbose_name="Orden")
+
+    orden = models.IntegerField(
+        default=1,
+        verbose_name="Orden"
+    )
+
     fecha_subida = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Fecha de subida"
@@ -594,21 +610,21 @@ class Multimedia(models.Model):
         ordering = ['orden', '-fecha_subida']
 
     def __str__(self):
-        return self.url
+        return str(self.archivo)
 
     def clean(self):
         errores = {}
 
-        if not self.url or not self.url.strip():
-            errores['url'] = "Debe ingresar una URL o ruta del archivo."
+        if not self.archivo:
+            errores['archivo'] = "Debe subir un archivo."
 
         if self.noticia and self.evento:
-            errores['noticia'] = "El archivo multimedia no puede estar asociado a noticia y evento al mismo tiempo."
+            errores['noticia'] = "No puede asociarse a noticia y evento al mismo tiempo."
 
         if not self.noticia and not self.evento:
-            errores['noticia'] = "El archivo multimedia debe estar asociado a una noticia o a un evento."
+            errores['noticia'] = "Debe asociarse a una noticia o a un evento."
 
-        if self.orden is not None and self.orden < 1:
+        if self.orden < 1:
             errores['orden'] = "El orden debe ser mayor o igual a 1."
 
         if errores:
