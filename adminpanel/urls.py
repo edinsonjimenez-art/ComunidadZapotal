@@ -3,11 +3,20 @@ from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from .views import (
-    UsuarioViewSet, ComuneroViewSet, CategoriaViewSet,
+    UsuarioViewSet,
+    ComuneroViewSet,
+    CategoriaViewSet,
     NoticiaViewSet,
-    EventoViewSet, ComentarioViewSet, ReaccionViewSet,
-    MensajeViewSet, NotificacionViewSet, MultimediaViewSet,
-    ReporteViewSet
+    EventoViewSet,
+    ComentarioViewSet,
+    ReaccionViewSet,
+    MensajeViewSet,
+    NotificacionViewSet,
+    MultimediaViewSet,
+    ReporteViewSet,
+    AutoridadViewSet,
+    ContactoMensajeViewSet,
+    LibroReclamacionViewSet,
 )
 
 router = DefaultRouter()
@@ -24,8 +33,19 @@ router.register('notificaciones', NotificacionViewSet)
 router.register('multimedia', MultimediaViewSet)
 router.register('reportes', ReporteViewSet)
 
+# NUEVAS APIS
+router.register('autoridades', AutoridadViewSet)
+router.register('contacto', ContactoMensajeViewSet)
+
+# LIBRO DE RECLAMACIONES
+router.register('libro-reclamaciones',LibroReclamacionViewSet)
+
 urlpatterns = [
+
     path('api/', include(router.urls)),
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+
+    path('api/schema/',SpectacularAPIView.as_view(),name='schema'),
+
+    path('docs/',SpectacularSwaggerView.as_view(url_name='schema'),name='swagger-ui'),
+
 ]

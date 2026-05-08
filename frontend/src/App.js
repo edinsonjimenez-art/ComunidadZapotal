@@ -1,6 +1,6 @@
 // App.js
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import {
   BrowserRouter,
@@ -22,8 +22,31 @@ import DetalleEvento from "./pages/Eventos/DetalleEvento";
 import NuestraHistoria from "./pages/Nosotros/NuestraHistoria";
 import Conocenos from "./pages/Nosotros/Conocenos";
 
+import Autoridades from "./components/Autoridades/Autoridades";
+import Contacto from "./components/Contacto/Contacto";
+
+import LibroReclamaciones from "./components/LibroReclamaciones/LibroReclamaciones";
+
 import "./App.css";
 
+/* SCROLL ARRIBA AUTOMÁTICO */
+function ScrollToTop() {
+
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+  }, [pathname]);
+
+  return null;
+}
+
+/* HOME */
 function Home() {
 
   const [faqAbierta, setFaqAbierta] = useState(null);
@@ -273,10 +296,13 @@ function Layout() {
 
   const ocultarNavbar =
     location.pathname.startsWith("/noticias/") ||
-    location.pathname.startsWith("/eventos/");
+    location.pathname.startsWith("/eventos/") ||
+    location.pathname.startsWith("/libro-reclamaciones");
 
   return (
     <>
+
+      <ScrollToTop />
 
       {!ocultarNavbar && <Navbar />}
 
@@ -317,9 +343,24 @@ function Layout() {
           element={<Conocenos />}
         />
 
+        <Route
+          path="/autoridades"
+          element={<Autoridades />}
+        />
+
+        <Route
+          path="/contactanos"
+          element={<Contacto />}
+        />
+
+        <Route
+          path="/libro-reclamaciones"
+          element={<LibroReclamaciones />}
+        />
+
       </Routes>
 
-      <Footer />
+      {!ocultarNavbar && <Footer />}
 
     </>
   );

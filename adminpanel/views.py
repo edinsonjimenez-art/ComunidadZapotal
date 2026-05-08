@@ -1,18 +1,44 @@
 from django.shortcuts import render
 
 # Create your views here.
+
 from rest_framework import viewsets
+from rest_framework.permissions import AllowAny
+
 from .models import (
-    Usuario, Comunero, Categoria, Noticia, Evento,
-    Comentario, Reaccion, Mensaje, Notificacion,
-    Multimedia, Reporte
+    Usuario,
+    Comunero,
+    Categoria,
+    Noticia,
+    Evento,
+    Comentario,
+    Reaccion,
+    Mensaje,
+    Notificacion,
+    Multimedia,
+    Reporte,
+    Autoridad,
+    ContactoMensaje,
+    LibroReclamacion
 )
+
 from .serializers import (
-    UsuarioSerializer, ComuneroSerializer, CategoriaSerializer,
-    NoticiaSerializer, EventoSerializer, ComentarioSerializer,
-    ReaccionSerializer, MensajeSerializer, NotificacionSerializer,
-    MultimediaSerializer, ReporteSerializer
+    UsuarioSerializer,
+    ComuneroSerializer,
+    CategoriaSerializer,
+    NoticiaSerializer,
+    EventoSerializer,
+    ComentarioSerializer,
+    ReaccionSerializer,
+    MensajeSerializer,
+    NotificacionSerializer,
+    MultimediaSerializer,
+    ReporteSerializer,
+    AutoridadSerializer,
+    ContactoMensajeSerializer,
+    LibroReclamacionSerializer
 )
+
 
 class UsuarioViewSet(viewsets.ModelViewSet):
     queryset = Usuario.objects.all()
@@ -67,3 +93,19 @@ class MultimediaViewSet(viewsets.ModelViewSet):
 class ReporteViewSet(viewsets.ModelViewSet):
     queryset = Reporte.objects.all()
     serializer_class = ReporteSerializer
+
+
+class AutoridadViewSet(viewsets.ModelViewSet):
+    queryset = Autoridad.objects.all()
+    serializer_class = AutoridadSerializer
+
+
+class ContactoMensajeViewSet(viewsets.ModelViewSet):
+    queryset = ContactoMensaje.objects.all()
+    serializer_class = ContactoMensajeSerializer
+
+
+class LibroReclamacionViewSet(viewsets.ModelViewSet):
+    queryset = LibroReclamacion.objects.all()
+    serializer_class = LibroReclamacionSerializer
+    permission_classes = [AllowAny]

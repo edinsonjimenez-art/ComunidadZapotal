@@ -1,35 +1,39 @@
 from rest_framework import serializers
+
 from .models import (
-    Usuario, Comunero, Categoria, Noticia, Evento,
-    Comentario, Reaccion, Mensaje, Notificacion,
-    Multimedia, Reporte
+    Usuario,
+    Comunero,
+    Categoria,
+    Noticia,
+    Evento,
+    Comentario,
+    Reaccion,
+    Mensaje,
+    Notificacion,
+    Multimedia,
+    Reporte,
+    Autoridad,
+    ContactoMensaje,
+    LibroReclamacion,
 )
+
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = '__all__'
+        fields = "__all__"
 
 
 class ComuneroSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comunero
-        fields = '__all__'
+        fields = "__all__"
 
 
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
-        fields = '__all__'
-
-
-class NoticiaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Noticia
-        fields = '__all__'
-
-from rest_framework import serializers
-from .models import Evento, Multimedia
+        fields = "__all__"
 
 
 class MultimediaSerializer(serializers.ModelSerializer):
@@ -37,17 +41,50 @@ class MultimediaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Multimedia
-        fields = ["id", "archivo_url", "tipo", "orden"]
+        fields = [
+            "id",
+            "archivo_url",
+            "tipo",
+            "orden",
+        ]
 
     def get_archivo_url(self, obj):
         request = self.context.get("request")
+
         if obj.archivo and request:
             return request.build_absolute_uri(obj.archivo.url)
+
+        if obj.archivo:
+            return obj.archivo.url
+
         return None
 
 
+class NoticiaSerializer(serializers.ModelSerializer):
+    multimedia = MultimediaSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta:
+        model = Noticia
+        fields = [
+            "id",
+            "titulo",
+            "contenido",
+            "fecha_publicacion",
+            "estado",
+            "categoria",
+            "usuario",
+            "multimedia",
+        ]
+
+
 class EventoSerializer(serializers.ModelSerializer):
-    multimedia = MultimediaSerializer(many=True, read_only=True)
+    multimedia = MultimediaSerializer(
+        many=True,
+        read_only=True
+    )
 
     class Meta:
         model = Evento
@@ -56,23 +93,21 @@ class EventoSerializer(serializers.ModelSerializer):
             "titulo",
             "descripcion",
             "fecha_evento",
+            "fecha_publicacion",
             "estado",
             "categoria",
             "usuario",
             "multimedia",
         ]
-        
+
 
 class ComentarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comentario
-        fields = '__all__'
+        fields = "__all__"
 
-
-# SERIALIZER DE REACCIONES
 
 class ReaccionSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Reaccion
         fields = [
@@ -84,11 +119,9 @@ class ReaccionSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-
         noticia = data.get("noticia")
         evento = data.get("evento")
 
-        # SOLO UNO
         if noticia and evento:
             raise serializers.ValidationError(
                 "No puedes reaccionar a noticia y evento al mismo tiempo."
@@ -105,47 +138,131 @@ class ReaccionSerializer(serializers.ModelSerializer):
 class MensajeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mensaje
-        fields = '__all__'
+        fields = "__all__"
 
 
 class NotificacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notificacion
-        fields = '__all__'
-
-
-class MultimediaSerializer(serializers.ModelSerializer):
-    archivo_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Multimedia
-        fields = ["id", "archivo_url", "tipo", "orden"]
-
-    def get_archivo_url(self, obj):
-        request = self.context.get("request")
-        if obj.archivo and request:
-            return request.build_absolute_uri(obj.archivo.url)
-        return None
-
-
-class NoticiaSerializer(serializers.ModelSerializer):
-    multimedia = MultimediaSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Noticia
-        fields = [
-            "id",
-            "titulo",
-            "contenido",
-            "fecha_publicacion",
-            "estado",
-            "categoria",
-            "usuario",
-            "multimedia",
-        ]
+        fields = "__all__"
 
 
 class ReporteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reporte
-        fields = '__all__'
+        fields = "__all__"
+
+
+class AutoridadSerializer(serializers.ModelSerializer):
+    foto_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Autoridad
+        fields = [
+            "id",
+            "nombres",
+            "apellidos",
+            "cargo",
+            "descripcion",
+            "telefono",
+            "correo",
+            "foto_url",
+            "orden",
+            "estado",
+            "fecha_registro",
+        ]
+
+    def get_foto_url(self, obj):
+        request = self.context.get("request")
+
+        if obj.foto and request:
+            return request.build_absolute_uri(obj.foto.url)
+
+        if obj.foto:
+            return obj.foto.url
+
+        return None
+
+
+class ContactoMensajeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactoMensaje
+        fields = [
+            "id",
+            "nombres",
+            "correo",
+            "telefono",
+            "asunto",
+            "mensaje",
+            "estado",
+            "fecha_envio",
+        ]
+
+        read_only_fields = [
+            "estado",
+            "fecha_envio",
+        ]
+
+    def validate(self, data):
+        nombres = data.get("nombres", "").strip()
+        asunto = data.get("asunto", "").strip()
+        mensaje = data.get("mensaje", "").strip()
+
+        if len(nombres) < 3:
+            raise serializers.ValidationError(
+                {"nombres": "El nombre debe tener al menos 3 caracteres."}
+            )
+
+        if len(asunto) < 3:
+            raise serializers.ValidationError(
+                {"asunto": "El asunto debe tener al menos 3 caracteres."}
+            )
+
+        if len(mensaje) < 10:
+            raise serializers.ValidationError(
+                {"mensaje": "El mensaje debe tener al menos 10 caracteres."}
+            )
+
+        return data
+    
+
+class LibroReclamacionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = LibroReclamacion
+
+        fields = "__all__"
+
+        read_only_fields = (
+            "id",
+            "fecha_registro",
+        )
+
+    def validate_dni(self, value):
+
+        if not value.isdigit() or len(value) != 8:
+            raise serializers.ValidationError(
+                "El DNI debe tener exactamente 8 dígitos."
+            )
+
+        return value
+
+    def validate_telefono(self, value):
+
+        if value:
+
+            if not value.isdigit():
+                raise serializers.ValidationError(
+                    "El teléfono solo debe contener números."
+                )
+
+        return value
+
+    def validate(self, data):
+
+        if not data.get("descripcion"):
+            raise serializers.ValidationError({
+                "descripcion": "La descripción es obligatoria."
+            })
+
+        return data

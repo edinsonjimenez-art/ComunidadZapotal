@@ -708,3 +708,237 @@ class Reporte(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+
+
+
+class Autoridad(models.Model):
+    class EstadoAutoridad(models.TextChoices):
+        ACTIVO = "ACTIVO", "Activo"
+        INACTIVO = "INACTIVO", "Inactivo"
+
+    nombres = models.CharField(max_length=100)
+    apellidos = models.CharField(max_length=100)
+    cargo = models.CharField(max_length=120)
+    descripcion = models.TextField()
+    telefono = models.CharField(max_length=15, blank=True, null=True)
+    correo = models.EmailField(blank=True, null=True)
+    foto = models.ImageField(upload_to="autoridades/", blank=True, null=True)
+    orden = models.PositiveIntegerField(default=1)
+    estado = models.CharField(
+        max_length=10,
+        choices=EstadoAutoridad.choices,
+        default=EstadoAutoridad.ACTIVO
+    )
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "autoridad"
+        verbose_name = "Autoridad"
+        verbose_name_plural = "Autoridades"
+        ordering = ["orden", "cargo", "apellidos"]
+
+    def __str__(self):
+        return f"{self.cargo} - {self.nombres} {self.apellidos}"
+
+    def clean(self):
+        errores = {}
+
+        if not self.nombres or not self.nombres.strip():
+            errores["nombres"] = "Los nombres son obligatorios."
+
+        if not self.apellidos or not self.apellidos.strip():
+            errores["apellidos"] = "Los apellidos son obligatorios."
+
+        if not self.cargo or not self.cargo.strip():
+            errores["cargo"] = "El cargo es obligatorio."
+
+        if not self.descripcion or not self.descripcion.strip():
+            errores["descripcion"] = "La descripción es obligatoria."
+
+        if self.telefono and not re.fullmatch(r"\d{6,15}", self.telefono):
+            errores["telefono"] = "El teléfono debe tener entre 6 y 15 dígitos."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ContactoMensaje(models.Model):
+    class EstadoMensaje(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        ATENDIDO = "ATENDIDO", "Atendido"
+        ARCHIVADO = "ARCHIVADO", "Archivado"
+
+    nombres = models.CharField(max_length=120)
+    correo = models.EmailField()
+    telefono = models.CharField(max_length=15, blank=True, null=True)
+    asunto = models.CharField(max_length=150)
+    mensaje = models.TextField()
+    estado = models.CharField(
+        max_length=10,
+        choices=EstadoMensaje.choices,
+        default=EstadoMensaje.PENDIENTE
+    )
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "contacto_mensaje"
+        verbose_name = "Mensaje de contacto"
+        verbose_name_plural = "Mensajes de contacto"
+        ordering = ["-fecha_envio"]
+
+    def __str__(self):
+        return f"{self.asunto} - {self.nombres}"
+
+    def clean(self):
+        errores = {}
+
+        if not self.nombres or not self.nombres.strip():
+            errores["nombres"] = "Los nombres son obligatorios."
+
+        if not self.asunto or not self.asunto.strip():
+            errores["asunto"] = "El asunto es obligatorio."
+
+        if not self.mensaje or not self.mensaje.strip():
+            errores["mensaje"] = "El mensaje es obligatorio."
+
+        if self.telefono and not re.fullmatch(r"\d{6,15}", self.telefono):
+            errores["telefono"] = "El teléfono debe tener entre 6 y 15 dígitos."
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+
+
+
+
+class LibroReclamacion(models.Model):
+
+    class TipoSolicitud(models.TextChoices):
+        RECLAMO = "RECLAMO", "Reclamo"
+        QUEJA = "QUEJA", "Queja"
+        SUGERENCIA = "SUGERENCIA", "Sugerencia"
+
+    class EstadoSolicitud(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        EN_REVISION = "EN_REVISION", "En revisión"
+        ATENDIDO = "ATENDIDO", "Atendido"
+
+    nombres = models.CharField(
+        max_length=120,
+        verbose_name="Nombres"
+    )
+
+    apellidos = models.CharField(
+        max_length=120,
+        verbose_name="Apellidos"
+    )
+
+    dni = models.CharField(
+        max_length=8,
+        verbose_name="DNI"
+    )
+
+    correo = models.EmailField(
+        verbose_name="Correo electrónico"
+    )
+
+    telefono = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        verbose_name="Teléfono"
+    )
+
+    tipo_solicitud = models.CharField(
+        max_length=15,
+        choices=TipoSolicitud.choices,
+        verbose_name="Tipo de solicitud"
+    )
+
+    asunto = models.CharField(
+        max_length=200,
+        verbose_name="Asunto"
+    )
+
+    descripcion = models.TextField(
+        verbose_name="Descripción"
+    )
+
+    pedido = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Pedido del usuario"
+    )
+
+    estado = models.CharField(
+        max_length=15,
+        choices=EstadoSolicitud.choices,
+        default=EstadoSolicitud.PENDIENTE,
+        verbose_name="Estado"
+    )
+
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de registro"
+    )
+
+    class Meta:
+        db_table = "libro_reclamacion"
+
+        verbose_name = "Libro de reclamación"
+
+        verbose_name_plural = "Libro de reclamaciones"
+
+        ordering = ["-fecha_registro"]
+
+    def __str__(self):
+        return f"{self.tipo_solicitud} - {self.nombres} {self.apellidos}"
+
+    def clean(self):
+
+        errores = {}
+
+        # NOMBRES
+        if not self.nombres or not self.nombres.strip():
+            errores["nombres"] = "Los nombres son obligatorios."
+
+        # APELLIDOS
+        if not self.apellidos or not self.apellidos.strip():
+            errores["apellidos"] = "Los apellidos son obligatorios."
+
+        # DNI
+        if not re.fullmatch(r"\d{8}", self.dni or ""):
+            errores["dni"] = "El DNI debe tener exactamente 8 dígitos."
+
+        # ASUNTO
+        if not self.asunto or not self.asunto.strip():
+            errores["asunto"] = "El asunto es obligatorio."
+
+        # DESCRIPCIÓN
+        if not self.descripcion or not self.descripcion.strip():
+            errores["descripcion"] = "La descripción es obligatoria."
+
+        # TELÉFONO
+        if self.telefono:
+            if not re.fullmatch(r"\d{6,15}", self.telefono):
+                errores["telefono"] = (
+                    "El teléfono debe tener entre 6 y 15 dígitos."
+                )
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+
+        self.full_clean()
+
+        super().save(*args, **kwargs)
