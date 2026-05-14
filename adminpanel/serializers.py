@@ -17,11 +17,35 @@ from .models import (
     LibroReclamacion,
 )
 
-
 class UsuarioSerializer(serializers.ModelSerializer):
+    foto_perfil_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
-        fields = "__all__"
+        fields = [
+            "id",
+            "nombres",
+            "apellidos",
+            "email",
+            "dni",
+            "tipo_usuario",
+            "estado",
+            "dni_verificado",
+            "foto_perfil",
+            "foto_perfil_url",
+            "fecha_registro",
+        ]
+
+    def get_foto_perfil_url(self, obj):
+        request = self.context.get("request")
+
+        if obj.foto_perfil and request:
+            return request.build_absolute_uri(obj.foto_perfil.url)
+
+        if obj.foto_perfil:
+            return obj.foto_perfil.url
+
+        return None
 
 
 class ComuneroSerializer(serializers.ModelSerializer):
@@ -144,7 +168,14 @@ class MensajeSerializer(serializers.ModelSerializer):
 class NotificacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notificacion
-        fields = "__all__"
+        fields = [
+            "id",
+            "titulo",
+            "mensaje",
+            "tipo",
+            "usuario_destino",
+            "fecha",
+        ]
 
 
 class ReporteSerializer(serializers.ModelSerializer):
@@ -224,13 +255,11 @@ class ContactoMensajeSerializer(serializers.ModelSerializer):
             )
 
         return data
-    
+
 
 class LibroReclamacionSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = LibroReclamacion
-
         fields = "__all__"
 
         read_only_fields = (
@@ -239,7 +268,6 @@ class LibroReclamacionSerializer(serializers.ModelSerializer):
         )
 
     def validate_dni(self, value):
-
         if not value.isdigit() or len(value) != 8:
             raise serializers.ValidationError(
                 "El DNI debe tener exactamente 8 dígitos."
@@ -248,9 +276,7 @@ class LibroReclamacionSerializer(serializers.ModelSerializer):
         return value
 
     def validate_telefono(self, value):
-
         if value:
-
             if not value.isdigit():
                 raise serializers.ValidationError(
                     "El teléfono solo debe contener números."
@@ -259,10 +285,21 @@ class LibroReclamacionSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-
         if not data.get("descripcion"):
             raise serializers.ValidationError({
                 "descripcion": "La descripción es obligatoria."
             })
 
         return data
+
+
+# ==========================
+# LOGIN DE USUARIOS
+# ==========================
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(
+        write_only=True,
+        min_length=6
+    )

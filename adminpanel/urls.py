@@ -17,6 +17,7 @@ from .views import (
     AutoridadViewSet,
     ContactoMensajeViewSet,
     LibroReclamacionViewSet,
+    login_usuario,
 )
 
 router = DefaultRouter()
@@ -38,14 +39,20 @@ router.register('autoridades', AutoridadViewSet)
 router.register('contacto', ContactoMensajeViewSet)
 
 # LIBRO DE RECLAMACIONES
-router.register('libro-reclamaciones',LibroReclamacionViewSet)
+router.register('libro-reclamaciones', LibroReclamacionViewSet)
 
 urlpatterns = [
 
+    path('api/login/', login_usuario, name='login_usuario'),
+
     path('api/', include(router.urls)),
 
-    path('api/schema/',SpectacularAPIView.as_view(),name='schema'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
 
-    path('docs/',SpectacularSwaggerView.as_view(url_name='schema'),name='swagger-ui'),
+    path(
+        'docs/',
+        SpectacularSwaggerView.as_view(url_name='schema'),
+        name='swagger-ui'
+    ),
 
 ]

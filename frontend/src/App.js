@@ -10,6 +10,20 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import {
+  FaUsers,
+  FaLeaf,
+  FaHandsHelping,
+  FaCalendarAlt,
+  FaNewspaper,
+  FaLandmark,
+  FaPhoneAlt,
+  FaFileAlt,
+  FaArrowRight,
+  FaMapMarkerAlt,
+  FaClock,
+} from "react-icons/fa";
+
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -27,20 +41,22 @@ import Contacto from "./components/Contacto/Contacto";
 
 import LibroReclamaciones from "./components/LibroReclamaciones/LibroReclamaciones";
 
+import Login from "./pages/Login/Login";
+import Perfil from "./pages/Perfil/Perfil";
+
+import LoadingScreen from "./pages/LoadingScreen/LoadingScreen";
+
 import "./App.css";
 
 /* SCROLL ARRIBA AUTOMÁTICO */
 function ScrollToTop() {
-
   const { pathname } = useLocation();
 
   useEffect(() => {
-
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
-
   }, [pathname]);
 
   return null;
@@ -48,69 +64,138 @@ function ScrollToTop() {
 
 /* HOME */
 function Home() {
-
   const [faqAbierta, setFaqAbierta] = useState(null);
+
+  const [noticias, setNoticias] = useState([]);
+  const [eventos, setEventos] = useState([]);
+
+  useEffect(() => {
+
+    fetch("http://localhost:8000/api/noticias/")
+      .then((res) => res.json())
+      .then((data) => {
+
+        const datos = Array.isArray(data)
+          ? data
+          : data.results || [];
+
+        setNoticias(datos);
+
+      })
+      .catch((error) => {
+        console.log("Error noticias:", error);
+      });
+
+    fetch("http://localhost:8000/api/eventos/")
+      .then((res) => res.json())
+      .then((data) => {
+
+        const datos = Array.isArray(data)
+          ? data
+          : data.results || [];
+
+        setEventos(datos);
+
+      })
+      .catch((error) => {
+        console.log("Error eventos:", error);
+      });
+
+  }, []);
+
+  /* SOLO LA NOTICIA MÁS RECIENTE */
+  const noticiasOrdenadas = [...noticias].sort(
+    (a, b) =>
+      new Date(
+        b.fecha_publicacion ||
+        b.fecha_creacion ||
+        b.created_at
+      ) -
+      new Date(
+        a.fecha_publicacion ||
+        a.fecha_creacion ||
+        a.created_at
+      )
+  );
+
+  const noticiaPrincipal = noticiasOrdenadas[0];
+
+  /* EVENTOS MÁS PRÓXIMOS */
+  const eventosProximos = [...eventos]
+    .sort(
+      (a, b) =>
+        new Date(a.fecha_evento) -
+        new Date(b.fecha_evento)
+    )
+    .slice(0, 3);
 
   const preguntas = [
     {
-      pregunta: "¿Qué información ofrece la plataforma?",
+      pregunta: "¿Qué información ofrece esta plataforma?",
       respuesta:
-        "La plataforma brinda acceso a noticias, eventos, comunicados y contenido institucional relacionado con la Comunidad Campesina Zapotal.",
+        "La plataforma brinda acceso a noticias, eventos, comunicados, información institucional y servicios digitales de la Comunidad Campesina Zapotal.",
     },
     {
-      pregunta: "¿Para quién está dirigida?",
+      pregunta: "¿Quiénes pueden usar esta página?",
       respuesta:
-        "Está dirigida a comuneros, autoridades, visitantes e integrantes interesados en conocer las actividades y organización de la comunidad.",
+        "Está dirigida a comuneros, autoridades, visitantes y ciudadanos interesados en conocer las actividades, organización y desarrollo de la comunidad.",
     },
     {
-      pregunta: "¿Cómo puedo visualizar las actividades y eventos?",
+      pregunta: "¿Dónde puedo revisar los eventos comunales?",
       respuesta:
-        "Puedes ingresar a la sección Eventos para consultar las actividades programadas, reuniones y fechas importantes.",
+        "Puedes ingresar a la sección Eventos para consultar reuniones, jornadas, campañas y actividades importantes.",
     },
   ];
+
+  /* OBTENER IMAGEN */
+  const obtenerImagen = (item) => {
+
+    const media = item?.multimedia?.find(
+      (archivo) => archivo.tipo === "IMAGEN"
+    );
+
+    return media?.archivo_url || "/img/fondo.png";
+  };
 
   return (
     <main className="main-container">
 
       {/* HERO */}
-      <section className="hero-dibujo">
+      <section className="home-hero">
 
-        <div className="hero-reveal"></div>
+        <div className="home-hero-overlay"></div>
 
-        <div className="hero-overlay"></div>
+        <div className="home-hero-content">
 
-        <div className="hero-content">
-
-          <span className="hero-etiqueta">
-            Comunidad • Cultura • Organización
+          <span className="home-etiqueta">
+            Bienvenidos a nuestra comunidad
           </span>
 
           <h1>
-            Comunidad <br />
-            Campesina <br />
-            Zapotal
+            Unidos trabajamos por el desarrollo de Zapotal
           </h1>
 
           <p>
-            Un espacio digital moderno creado para informar,
-            conectar y fortalecer la identidad de nuestra
-            comunidad mediante noticias, eventos y contenido
-            relevante para todos los comuneros.
+            Promovemos el bienestar de nuestros comuneros,
+            la gestión responsable de nuestros recursos
+            y el desarrollo sostenible de nuestra tierra.
           </p>
 
-          <div className="hero-botones">
+          <div className="home-botones">
 
             <Link
               to="/nosotros/conocenos"
               className="btn-principal"
             >
-              Conócenos
+              Conoce más sobre nosotros
+              <FaArrowRight />
             </Link>
 
             <Link
               to="/noticias"
-              className="btn-linea"
+              className="btn-secundario"
             >
+              <FaNewspaper />
               Ver noticias
             </Link>
 
@@ -120,91 +205,266 @@ function Home() {
 
       </section>
 
-      {/* INTRO */}
-      <section className="intro-section">
+      {/* VALORES */}
+      <section className="home-valores">
 
-        <div className="intro-texto">
+        <div className="valor-item">
 
-          <span>Nuestra plataforma</span>
+          <div className="valor-icono">
+            <FaUsers />
+          </div>
 
-          <h2>
-            Información clara para una comunidad más conectada
-          </h2>
+          <div>
+            <h3>Nuestra Comunidad</h3>
 
-          <p>
-            Este portal digital permite compartir noticias,
-            eventos y contenido relevante de manera organizada,
-            moderna y accesible.
-          </p>
+            <p>
+              Conoce nuestra historia,
+              valores y organización comunal.
+            </p>
+          </div>
 
         </div>
 
-        <div className="intro-panel">
+        <div className="valor-item">
 
-          <div className="panel-item">
-            <strong>01</strong>
-            <p>Noticias actualizadas</p>
+          <div className="valor-icono">
+            <FaLeaf />
           </div>
 
-          <div className="panel-item">
-            <strong>02</strong>
-            <p>Eventos comunitarios</p>
+          <div>
+            <h3>Gestión Responsable</h3>
+
+            <p>
+              Trabajamos por el uso sostenible
+              de nuestros recursos.
+            </p>
           </div>
 
-          <div className="panel-item">
-            <strong>03</strong>
-            <p>Historia e identidad</p>
+        </div>
+
+        <div className="valor-item">
+
+          <div className="valor-icono">
+            <FaHandsHelping />
+          </div>
+
+          <div>
+            <h3>Participación Activa</h3>
+
+            <p>
+              La participación comunal
+              fortalece nuestro desarrollo.
+            </p>
+          </div>
+
+        </div>
+
+        <div className="valor-item">
+
+          <div className="valor-icono">
+            <FaCalendarAlt />
+          </div>
+
+          <div>
+            <h3>Eventos y Actividades</h3>
+
+            <p>
+              Infórmate sobre reuniones,
+              jornadas y actividades.
+            </p>
           </div>
 
         </div>
 
       </section>
 
-      {/* CARDS */}
-      <section className="cards-section">
+      {/* CONTENIDO */}
+      <section className="home-contenido">
 
-        <h2>Explora nuestro contenido</h2>
+        {/* NOTICIA PRINCIPAL */}
+        <div className="home-bloque noticias-destacadas">
 
-        <div className="cards">
+          <div className="home-bloque-header">
 
-          <div className="card">
-
-            <h3>Noticias</h3>
-
-            <p>
-              Consulta información relevante y comunicados importantes.
-            </p>
+            <h2>Noticia Destacada</h2>
 
             <Link to="/noticias">
-              Ingresar
+              Ver todas
+              <FaArrowRight />
             </Link>
 
           </div>
 
-          <div className="card">
+          {noticiaPrincipal ? (
 
-            <h3>Eventos</h3>
+            <article className="noticia-principal">
 
-            <p>
-              Revisa actividades, reuniones y fechas importantes.
+              <img
+                src={obtenerImagen(noticiaPrincipal)}
+                alt={noticiaPrincipal.titulo}
+              />
+
+              <div className="noticia-info">
+
+                <span>Comunidad</span>
+
+                <h3>
+                  {noticiaPrincipal.titulo}
+                </h3>
+
+                <p>
+                  {noticiaPrincipal.descripcion?.length > 140
+                    ? noticiaPrincipal.descripcion.substring(0, 140) + "..."
+                    : noticiaPrincipal.descripcion}
+                </p>
+
+                <Link
+                  to={`/noticias/${noticiaPrincipal.id}`}
+                  className="noticia-link"
+                >
+                  Leer más
+                  <FaArrowRight />
+                </Link>
+
+              </div>
+
+            </article>
+
+          ) : (
+
+            <p className="home-mensaje">
+              No hay noticias registradas.
             </p>
+
+          )}
+
+        </div>
+
+        {/* EVENTOS */}
+        <div className="home-bloque eventos-proximos">
+
+          <div className="home-bloque-header">
+
+            <h2>Próximos Eventos</h2>
 
             <Link to="/eventos">
-              Ingresar
+              Ver todos
+              <FaArrowRight />
             </Link>
 
           </div>
 
-          <div className="card">
+          {eventosProximos.length > 0 ? (
 
-            <h3>Nosotros</h3>
+            eventosProximos.map((evento) => {
 
-            <p>
-              Conoce nuestra historia, valores y organización comunal.
+              const fecha = new Date(evento.fecha_evento);
+
+              return (
+
+                <Link
+                  to={`/eventos/${evento.id}`}
+                  className="evento-home"
+                  key={evento.id}
+                >
+
+                  <div className="evento-fecha-home">
+
+                    <strong>
+                      {fecha.toLocaleDateString("es-PE", {
+                        day: "2-digit",
+                      })}
+                    </strong>
+
+                    <span>
+                      {fecha.toLocaleDateString("es-PE", {
+                        month: "short",
+                      })}
+                    </span>
+
+                  </div>
+
+                  <div>
+
+                    <h3>{evento.titulo}</h3>
+
+                    <p>
+                      <FaClock />
+                      {" "}
+                      {fecha.toLocaleTimeString("es-PE", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+
+                    <p>
+                      <FaMapMarkerAlt />
+                      {" "}
+                      {evento.lugar || "Lugar por confirmar"}
+                    </p>
+
+                  </div>
+
+                </Link>
+
+              );
+            })
+
+          ) : (
+
+            <p className="home-mensaje">
+              No hay eventos registrados.
             </p>
 
+          )}
+
+          <Link
+            to="/eventos"
+            className="btn-eventos-home"
+          >
+            <FaCalendarAlt />
+            Ver todos los eventos
+          </Link>
+
+        </div>
+
+        {/* ACCESO RÁPIDO */}
+        <div className="home-bloque acceso-rapido">
+
+          <div className="home-bloque-header">
+            <h2>Acceso Rápido</h2>
+          </div>
+
+          <div className="acceso-grid">
+
             <Link to="/nosotros/historia">
-              Ingresar
+              <FaLandmark />
+              <span>Historia</span>
+            </Link>
+
+            <Link to="/autoridades">
+              <FaUsers />
+              <span>Autoridades</span>
+            </Link>
+
+            <Link to="/eventos">
+              <FaCalendarAlt />
+              <span>Eventos</span>
+            </Link>
+
+            <Link to="/contactanos">
+              <FaPhoneAlt />
+              <span>Contacto</span>
+            </Link>
+
+            <Link to="/libro-reclamaciones">
+              <FaFileAlt />
+              <span>Reclamaciones</span>
+            </Link>
+
+            <Link to="/noticias">
+              <FaNewspaper />
+              <span>Noticias</span>
             </Link>
 
           </div>
@@ -244,6 +504,7 @@ function Home() {
             >
 
               <button
+                type="button"
                 onClick={() =>
                   setFaqAbierta(
                     faqAbierta === index ? null : index
@@ -254,21 +515,7 @@ function Home() {
                 <span>{item.pregunta}</span>
 
                 <div className="faq-icono">
-
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                  </svg>
-
+                  ⌄
                 </div>
 
               </button>
@@ -297,7 +544,8 @@ function Layout() {
   const ocultarNavbar =
     location.pathname.startsWith("/noticias/") ||
     location.pathname.startsWith("/eventos/") ||
-    location.pathname.startsWith("/libro-reclamaciones");
+    location.pathname.startsWith("/libro-reclamaciones") ||
+    location.pathname.startsWith("/login");
 
   return (
     <>
@@ -310,7 +558,11 @@ function Layout() {
 
         <Route
           path="/"
-          element={<Home />}
+          element={
+            localStorage.getItem("usuario")
+              ? <Home />
+              : <Login />
+          }
         />
 
         <Route
@@ -358,6 +610,16 @@ function Layout() {
           element={<LibroReclamaciones />}
         />
 
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/perfil"
+          element={<Perfil />}
+        />
+
       </Routes>
 
       {!ocultarNavbar && <Footer />}
@@ -368,6 +630,22 @@ function Layout() {
 
 /* APP */
 function App() {
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+
+    const tiempo = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+
+    return () => clearTimeout(tiempo);
+
+  }, []);
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   return (
 

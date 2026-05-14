@@ -8,7 +8,7 @@ function NuestraHistoria() {
       {/* HERO CON 3 IMÁGENES */}
       <section className="historia-hero">
         
-        {/* 🔥 tercera imagen animada */}
+        {/*  tercera imagen animada */}
         <div className="hero-bg-extra"></div>
 
         <div className="historia-overlay">

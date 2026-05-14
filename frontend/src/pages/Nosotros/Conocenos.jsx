@@ -51,7 +51,7 @@ function Conocenos() {
           </p>
         </div>
 
-        <img src="/img/eventos-ct.jpg" alt="Comunidad Zapotal" />
+        <img src="/img/Conocenos/conocenos-dt.png" alt="Comunidad Zapotal" />
       </section>
     </main>
   );

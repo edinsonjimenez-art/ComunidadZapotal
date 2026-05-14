@@ -23,7 +23,7 @@
   height: 470px;
   background:
     linear-gradient(rgba(10,18,10,0.72), rgba(10,18,10,0.38)),
-    url("/public/img/contacto.jpg");
+    url("/public/img/contacto/contacto.jpg");
   background-size: cover;
   background-position: center;
   display: flex;

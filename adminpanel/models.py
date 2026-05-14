@@ -18,24 +18,32 @@ class Usuario(models.Model):
     email = models.EmailField(unique=True, verbose_name="Correo electrónico")
     password = models.CharField(max_length=255, verbose_name="Contraseña")
     dni = models.CharField(max_length=8, unique=True, verbose_name="DNI")
+
     tipo_usuario = models.CharField(
         max_length=10,
         choices=TipoUsuario.choices,
         verbose_name="Tipo de usuario"
     )
+
     estado = models.CharField(
         max_length=10,
         choices=EstadoUsuario.choices,
         default=EstadoUsuario.ACTIVO,
         verbose_name="Estado"
     )
-    dni_verificado = models.BooleanField(default=False, verbose_name="DNI verificado")
-    foto_perfil = models.CharField(
-        max_length=255,
+
+    dni_verificado = models.BooleanField(
+        default=False,
+        verbose_name="DNI verificado"
+    )
+
+    foto_perfil = models.ImageField(
+        upload_to='usuarios/perfiles/',
         blank=True,
         null=True,
         verbose_name="Foto de perfil"
     )
+
     fecha_registro = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Fecha de registro"
@@ -73,9 +81,6 @@ class Usuario(models.Model):
         super().save(*args, **kwargs)
 
 
-import re
-from django.core.exceptions import ValidationError
-
 class Comunero(models.Model):
     class EstadoComunero(models.TextChoices):
         ACTIVO = 'ACTIVO', 'ACTIVO'
@@ -86,14 +91,17 @@ class Comunero(models.Model):
         unique=True,
         verbose_name="DNI oficial"
     )
+
     nombres = models.CharField(max_length=100, verbose_name="Nombres")
     apellidos = models.CharField(max_length=100, verbose_name="Apellidos")
+
     estado = models.CharField(
         max_length=10,
         choices=EstadoComunero.choices,
         default=EstadoComunero.ACTIVO,
         verbose_name="Estado"
     )
+
     usuario = models.ForeignKey(
         Usuario,
         on_delete=models.CASCADE,
@@ -113,18 +121,15 @@ class Comunero(models.Model):
     def clean(self):
         errores = {}
 
-        # DNI válido
         if not re.fullmatch(r'\d{8}', self.dni or ''):
             errores['dni'] = "El DNI debe tener exactamente 8 dígitos."
 
-        # Nombres y apellidos no vacíos
         if not self.nombres.strip():
             errores['nombres'] = "El nombre no puede estar vacío."
 
         if not self.apellidos.strip():
             errores['apellidos'] = "El apellido no puede estar vacío."
 
-        # Validar tipo de usuario
         if self.usuario and self.usuario.tipo_usuario != Usuario.TipoUsuario.COMUNERO:
             errores['usuario'] = "El usuario debe ser de tipo COMUNERO."
 
@@ -563,7 +568,7 @@ class Multimedia(models.Model):
 
     archivo = models.FileField(
         upload_to='multimedia/',
-        null=True,        # 👈 IMPORTANTE
+        null=True,        # IMPORTANTE
         blank=True,  
         verbose_name="Archivo (imagen o video)"
     )

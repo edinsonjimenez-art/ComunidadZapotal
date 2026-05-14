@@ -35,7 +35,7 @@
       rgba(0, 0, 0, 0.18),
       rgba(0, 0, 0, 0.32)
     ),
-    url("/public/img/Historia-comunidad/foto-pincipal.png");
+    url("/public/img/Historia-comunidad/Nuestra-historia.png");
 }
 
 /* IMAGEN 2 */
@@ -44,7 +44,7 @@
       rgba(0, 0, 0, 0.18),
       rgba(0, 0, 0, 0.32)
     ),
-    url("/public/img/Historia-comunidad/conocenos-3.jpg");
+    url("/public/img/Historia-comunidad/Nuestra-historia2.png");
   animation-delay: 6s;
 }
 
@@ -54,7 +54,7 @@
       rgba(0, 0, 0, 0.18),
       rgba(0, 0, 0, 0.32)
     ),
-    url("/public/img/Historia-comunidad/nosotros-1.jpg");
+    url("/public/img/Historia-comunidad/Nuestra-historia3.png");
   animation-delay: 12s;
   z-index: 0;
 }
