@@ -85,7 +85,7 @@ function Login() {
         <div className="login-hero-content">
 
           <img
-            src="/img/Logo-principal.png"
+            src="/img/Logo-comunidad/Logo-principal.png"
             alt="Logo Comunidad Campesina Zapotal"
             className="login-logo"
           />
